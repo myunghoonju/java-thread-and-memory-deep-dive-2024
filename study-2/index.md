@@ -72,16 +72,20 @@ public class NumberRange{
 
     public void setLower(int i){
         // 주의 안전하지 않는 비교문
-        if(i> upper.get())
+        if(i> upper.get()) {
           throw new IllegalArgumentException("can'set lower to "+i+"> upper");
-          lower.set(i);
+        }
+        
+        lower.set(i);
     }
 
     public void setUpper(int i){
         // 주의 - 안전하지 않은 비교문
-        if(i < lower.get())
-            throw new IllegalArgumentException ("can't set upper to "+i+"< lower");
-         upper.set(i);   
+        if(i < lower.get()) {
+          throw new IllegalArgumentException ("can't set upper to "+i+"< lower");
+        }
+        
+        upper.set(i);   
     }
 
     public boolean isInRange(int i){
@@ -100,4 +104,57 @@ public class NumberRange{
 - 잘 정리된 문서를 통하여 유지보수에 도움이 된다
 
 #### 5장 [5-1 ~ 5-3]
+동기화된 컬렉션 클래스  
+ - e.g., vector, hashtable
+ - Collections.synchronizedXX 메소드를 사용해 동기화
+ - 문제점
+   - 아래의 예시는 thread safe 하지만 섞여 동작하거나 순서대로 동작하여 기대하지 않은 결과를 만든다
+   - 동기화 하면 병렬 처리의 이점을 잃어버린다
+```java
+public static Object getLast(Vector list){
+    synchronized(list){
+        int lastIndex = list.size() -1;
+        return list.get(lastIndex);
+    }
+}
 
+public static void deleteLast(Vector list){
+    synchronized(list){
+        int lastIndex = list.size() - 1;
+        list.remove(lastIndex);
+    }
+}
+```
+ - Iterator & ConcurrentModificationException
+    - 반복문이 실행되는 동안 동기화 오류를 나타내는 Exception 클래스이다
+    - 이를 방지하기 위하여 Loop 문을 동기화하면 deadLock 또는 starvation 발생 할 수 있다
+    - Hidden Iterator 주의해야한다
+      - 내부적으로 iterator 사용하여 ConcurrentModificationException 발생 가능하다
+        - 예시로 StringBuilder.append, toString 등이 있다.
+ ```java
+public class HiddenIterator {
+
+    @GuardedBy 
+    private final Set<Integer> set = new HashSet<Integer>();
+
+    public synchronized void add(Integer i) {
+        set.add(i);
+    }
+
+    public synchronized void remove(Integer i) {
+        set.remove(i);
+    }
+
+    public void addTenThings(){
+        Random r = new Random();
+        for(int i=0; i<10; i++) {
+            add(r.nextInt());
+        }
+        
+        System.error.println("DEBUG: added ten elements to"+ set); // iterator hidden
+    }
+}
+```
+병렬 컬렉션
+
+블로킹 큐와 프로듀셔-컨슈머 패턴
